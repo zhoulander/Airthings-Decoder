@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airthings · Local Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#0b1017;--panel:#111a25;--panel2:#162231;--line:#253447;--text:#e8eef6;--muted:#91a1b5;--accent:#69d5c4;--blue:#80aaff;--good:#5ed6a0;--warn:#f2bd67;--bad:#ff7d85;--radius:15px}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% -10%,#1b3041 0,transparent 42%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:9px 13px}button:hover{border-color:#54728c}button.primary{background:var(--accent);border-color:var(--accent);color:#09201d;font-weight:700}button.ghost{background:transparent}button.danger{color:var(--bad)}button:disabled{opacity:.45;cursor:not-allowed}
+.app{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}.sidebar{border-right:1px solid var(--line);padding:24px 16px;background:#0c131d;display:flex;flex-direction:column;gap:25px}.brand{display:flex;gap:11px;align-items:center;padding:0 8px}.brand-mark{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#75e0cb,#4d8caa);display:grid;place-items:center;color:#06211e;font-weight:900;font-size:18px}.brand strong{font-size:15px;letter-spacing:.08em}.brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.04em}.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#63768b;padding:0 10px 7px}.nav{display:grid;gap:5px}.nav button{display:flex;align-items:center;gap:12px;text-align:left;border:0;background:transparent;color:var(--muted);padding:11px 12px}
+.nav button.active{background:#1a2b39;color:var(--text)}
+.nav-icon{width:19px;text-align:center;font-size:16px}
+.side-foot{margin-top:auto;padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:7px}.main{min-width:0;padding:28px clamp(18px,3vw,42px) 50px;max-width:1600px;width:100%;margin:auto}.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:27px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);font-weight:700}.topbar h1{font-size:28px;letter-spacing:-.04em;margin:3px 0}.subtitle{color:var(--muted);margin:0}.top-actions{display:flex;align-items:center;gap:9px}.status-pill{border:1px solid var(--line);border-radius:99px;padding:7px 11px;color:var(--muted);font-size:12px;white-space:nowrap}.page{display:none}.page.active{display:block}.grid{display:grid;gap:15px}.stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:17px}.card{background:linear-gradient(145deg,rgba(23,36,51,.97),rgba(15,24,35,.97));border:1px solid var(--line);border-radius:var(--radius);padding:18px;min-width:0}.stat-label,.muted{color:var(--muted)}.stat-value{font-size:29px;font-weight:700;letter-spacing:-.04em;margin-top:5px}.stat-foot{font-size:11px;color:var(--muted);margin-top:3px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}.section-head h2{font-size:16px;margin:0;letter-spacing:-.02em}.section-head p{margin:3px 0 0;color:var(--muted);font-size:12px}.device-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.device-card{cursor:pointer;transition:.15s}.device-card:hover{border-color:#54728c;transform:translateY(-1px)}.device-top{display:flex;justify-content:space-between;gap:10px}.device-name{font-weight:700;font-size:15px}.device-model{color:var(--muted);font-size:11px}.badge{font-size:10px;border-radius:99px;padding:4px 8px;background:#1b3a36;color:var(--good);height:max-content}.badge.off{background:#342b25;color:var(--warn)}
+.readings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+
+.reading {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  min-width: 0;
+}
+
+.reading-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  min-width: 0;
+}
+
+.reading-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.reading-icon {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.reading strong.reading-value {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.reading-value.good { color: var(--good); }
+.reading-value.fair { color: var(--warn); }
+.reading-value.poor { color: var(--bad); }
+
+.reading-status {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.reading-status.good { color: var(--good); }
+.reading-status.fair { color: var(--warn); }
+.reading-status.poor { color: var(--bad); }
+.two-col{grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);margin-top:16px}.chart-card{min-height:320px}.chart-wrap{height:245px;position:relative}.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:9px}.toolbar select,.toolbar input,.field input,.field select{background:#0c1520;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:9px 11px;min-width:0}.toolbar select{max-width:190px}.device-list{display:grid;gap:10px}.device-row{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#111a25}.device-row-main{flex:1;min-width:0}.device-row-actions{display:flex;gap:7px;flex-wrap:wrap}.device-detail{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(270px,.8fr);gap:15px}.detail-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.metric-tile{background:#0c1520;border:1px solid var(--line);border-radius:11px;padding:13px}.metric-tile strong{display:block;font-size:22px}.metric-tile span{font-size:11px;color:var(--muted)}.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:12px;color:var(--muted)}.field input{width:100%}.check-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:13px 0}.check-item{display:flex;gap:8px;align-items:center;padding:9px 10px;background:#0c1520;border:1px solid var(--line);border-radius:9px}.check-item input{accent-color:var(--accent)}.job{padding:11px 0;border-bottom:1px solid var(--line)}.job:last-child{border-bottom:0}.job-head{display:flex;justify-content:space-between;gap:10px}.job pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#9eb0c5;background:#0a1119;border-radius:8px;padding:10px;max-height:180px;overflow:auto;font-size:11px}.pill{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.big-number{font-size:24px;font-weight:700}.footer-note{color:var(--muted);font-size:11px;margin-top:9px}.toast{position:fixed;right:22px;bottom:22px;background:#1a2d3a;border:1px solid #456477;border-radius:11px;padding:12px 16px;box-shadow:0 12px 40px #0008;display:none;z-index:5}.toast.show{display:block}.mobile-nav{display:none}
+.device-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+
+.battery-indicator {
+  display: inline-flex;
+  align-items: center;
+}
+
+.battery-shell {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.battery-shell::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 3px;
+  width: 2px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 0 2px 2px 0;
+}
+
+.battery-fill {
+  display: block;
+  height: 100%;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.battery-indicator.good { color: #35b879; }
+.battery-indicator.medium { color: #e5b43b; }
+.battery-indicator.low { color: #e05252; }
+
+
+/* Sidebar collapse */
+.app {
+  transition: grid-template-columns .2s ease;
+}
+
+.sidebar {
+  position: relative;
+  min-width: 0;
+}
+
+
+.sidebar-toggle {
+  position: absolute;
+  top: 24px;
+  right: 12px !important;
+  left: auto !important;
+  margin-left: auto;
+  width: 24px !important;
+  min-width: 24px;
+  max-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: none;
+}
+
+.sidebar-toggle:hover {
+  color: var(--text);
+  opacity: 1;
+}
+
+
+.sidebar-toggle:hover {
+  color: var(--text);
+  background: var(--line);
+}
+
+.app.sidebar-collapsed {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.sidebar-collapsed .sidebar {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.sidebar-collapsed .brand {
+  justify-content: center;
+  margin-top: 35px;
+}
+
+.sidebar-collapsed .brand > div:nth-child(2),
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .side-foot > *:not(.dot) {
+  display: none;
+}
+
+.sidebar-collapsed .nav button {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 0;
+}
+
+.sidebar-collapsed .nav-icon {
+  font-size: 20px;
+  margin: 0;
+}
+
+.sidebar-collapsed .side-foot {
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-collapsed .sidebar-toggle {
+  right: 23px;
+}
+
+
+
+/* Navigation hover effects */
+.nav button {
+  position: relative;
+  transition: background .18s ease, color .18s ease;
+}
+
+/* Left-side indicator */
+.nav button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 3px;
+  background: #70b7ed;
+  opacity: 0;
+  transition: opacity .18s ease, background .18s ease;
+}
+
+/* Active page indicator */
+.nav button.active::before {
+  opacity: 1;
+  background: #70b7ed;
+}
+
+/* Subtle hover on non-active pages only */
+.nav button:not(.active):hover {
+  background: rgba(120, 170, 220, .06);
+  color: var(--muted);
+}
+
+.nav button:not(.active):hover::before {
+  background: #54728c;
+  opacity: .45;
+}
+
+/* Active page never changes on hover */
+.nav button.active,
+.nav button.active:hover {
+  background: #1a2b39;
+  color: var(--text);
+}
+
+/* Sidebar arrow only appears on sidebar hover */
+.sidebar-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, color .18s ease;
+}
+
+.sidebar:hover .sidebar-toggle,
+.sidebar:focus-within .sidebar-toggle {
+  opacity: .75;
+  pointer-events: auto;
+}
+
+.sidebar-toggle:hover {
+  opacity: 1 !important;
+}
+
+/* Reveal sidebar toggle only on hover/focus */
+.sidebar-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, color .18s ease;
+}
+
+.sidebar:hover .sidebar-toggle,
+.sidebar:focus-within .sidebar-toggle {
+  opacity: .75;
+  pointer-events: auto;
+}
+
+.sidebar-toggle:hover {
+  opacity: 1 !important;
+}
+
+
+
+.dashboard-panels {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:15px;
+}
+
+.dashboard-panel {
+  min-width:0;
+  background:linear-gradient(145deg,rgba(23,36,51,.97),rgba(15,24,35,.97));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+}
+
+.panel-controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:12px;
+}
+
+.panel-controls select {
+  background:#0c1520;
+  border:1px solid var(--line);
+  border-radius:9px;
+  color:var(--text);
+  padding:8px;
+  min-width:0;
+}
+
+.panel-devices {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:12px;
+}
+
+.panel-device {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.panel-device input {
+  accent-color:var(--accent);
+}
+
+.panel-chart {
+  height:260px;
+  position:relative;
+}
+#latest-output {
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+@media(max-width:900px) {
+  .dashboard-panels {
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}.device-grid{grid-template-columns:repeat(2,1fr)}.two-col,.device-detail{grid-template-columns:1fr}}
+@media(max-width:700px){.app{display:block}.sidebar{display:none}.main{padding:19px 14px 90px}.topbar{align-items:flex-start}.topbar h1{font-size:24px}.top-actions .status-pill{display:none}.stats{gap:9px}.card{padding:14px}.stat-value{font-size:24px}.device-grid{grid-template-columns:1fr}.mobile-nav{position:fixed;z-index:4;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:#0b131d;border-top:1px solid var(--line);padding:7px 4px calc(7px + env(safe-area-inset-bottom))}.mobile-nav button{border:0;background:transparent;padding:7px 2px;color:var(--muted);font-size:10px;display:grid;gap:2px;justify-items:center}.mobile-nav button.active{color:var(--accent)}.mobile-nav span:first-child{font-size:17px}.device-row{align-items:flex-start;flex-wrap:wrap}.device-row-actions{width:100%}.settings-grid{grid-template-columns:1fr}.toolbar select{max-width:100%;flex:1}.chart-wrap{height:220px}}
+
+/* Outdoor conditions */
+
+/* Main collapsible card */
+details.outdoor-card {
+  display: block;
+  margin-top: 16px;
+  padding: 20px;
+}
+
+details.outdoor-card > summary {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+  padding: 0;
+}
+
+details.outdoor-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.outdoor-card > summary::marker {
+  content: "";
+}
+
+/* Compact weather heading */
+.outdoor-summary-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.outdoor-summary-line .weather-icon {
+  font-size: 30px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.outdoor-summary-line strong {
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: -.4px;
+}
+
+.outdoor-summary-detail {
+  color: var(--muted);
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.outdoor-chevron {
+  color: var(--muted);
+  font-size: 22px;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform .2s ease;
+}
+
+.outdoor-card[open] .outdoor-chevron {
+  transform: rotate(180deg);
+}
+
+/* Expanded content */
+.outdoor-expanded {
+  padding-top: 20px;
+}
+
+.outdoor-readings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.outdoor-reading {
+  background: #0c1520;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 13px;
+  min-width: 0;
+}
+
+.outdoor-reading strong {
+  display: block;
+  font-size: 21px;
+  letter-spacing: -.04em;
+  white-space: nowrap;
+}
+
+.outdoor-reading span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+/* Location picker */
+.outdoor-location-picker {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.outdoor-location-picker summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  user-select: none;
+  list-style: none;
+}
+
+.outdoor-location-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.outdoor-location-picker summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 9px;
+  transition: transform .2s;
+}
+
+.outdoor-location-picker[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.outdoor-location-content {
+  padding-top: 14px;
+}
+
+.outdoor-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.outdoor-search-row input {
+  flex: 1;
+  min-width: 0;
+  background: #0c1520;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--text);
+  padding: 9px 11px;
+}
+
+.outdoor-search-results {
+  display: grid;
+  gap: 6px;
+}
+
+.outdoor-search-result {
+  width: 100%;
+  text-align: left;
+  background: #0c1520;
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.outdoor-search-result:hover {
+  background: #172637;
+  border-color: #54728c;
+}
+
+.outdoor-expanded > button {
+  margin-top: 12px;
+}
+
+/* Attribution */
+.outdoor-card .footer-note {
+  line-height: 1.6;
+}
+
+.outdoor-card a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.outdoor-card a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile */
+@media(max-width:700px) {
+  .outdoor-card {
+    padding: 15px;
+  }
+
+  .outdoor-summary-line {
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+
+  .outdoor-summary-line .weather-icon {
+    font-size: 25px;
+  }
+
+  .outdoor-summary-line strong {
+    font-size: 18px;
+  }
+
+  .outdoor-summary-detail {
+    font-size: 13px;
+  }
+
+  .outdoor-chevron {
+    margin-left: auto;
+  }
+
+  .outdoor-readings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .outdoor-search-row {
+    flex-direction: column;
+  }
+}
+
+/* Full photographic weather background */
+
+details.outdoor-card {
+  background-color: #101923;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image .5s ease;
+  overflow: hidden;
+}
+
+/* Clear sky */
+details.outdoor-card[data-weather="clear"] {
+  background-image:
+    linear-gradient(180deg, rgba(8,17,27,.35), rgba(8,17,27,.78)),
+    url("/images/weather/clear.jpg");
+}
+
+/* Partly cloudy */
+details.outdoor-card[data-weather="partly"] {
+  background-image:
+    linear-gradient(180deg, rgba(8,17,27,.4), rgba(8,17,27,.82)),
+    url("/images/weather/partly.jpg");
+}
+
+/* Overcast */
+details.outdoor-card[data-weather="cloudy"] {
+  background-image:
+    linear-gradient(180deg, rgba(8,17,27,.45), rgba(8,17,27,.85)),
+    url("/images/weather/cloudy.jpg");
+}
+
+/* Fog */
+details.outdoor-card[data-weather="fog"] {
+  background-image:
+    linear-gradient(180deg, rgba(8,17,27,.35), rgba(8,17,27,.82)),
+    url("/images/weather/fog.jpg");
+}
+
+/* Rain */
+details.outdoor-card[data-weather="rain"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,13,23,.45), rgba(5,13,23,.88)),
+    url("/images/weather/rain.jpg");
+}
+
+/* Snow */
+details.outdoor-card[data-weather="snow"] {
+  background-image:
+    linear-gradient(180deg, rgba(8,17,27,.35), rgba(8,17,27,.82)),
+    url("/images/weather/snow.jpg");
+}
+
+/* Thunderstorms */
+details.outdoor-card[data-weather="storm"] {
+  background-image:
+    linear-gradient(180deg, rgba(4,8,18,.45), rgba(4,8,18,.9)),
+    url("/images/weather/storm.jpg");
+}
+
+/* Glass-like reading tiles */
+.outdoor-reading {
+  background: rgba(8,17,27,.70) !important;
+  border-color: rgba(255,255,255,.13) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Location picker and controls */
+.outdoor-location-picker {
+  border-color: rgba(255,255,255,.2);
+}
+
+.outdoor-location-picker summary,
+.outdoor-card .footer-note {
+  color: rgba(255,255,255,.7);
+}
+
+.outdoor-search-row input,
+.outdoor-search-result {
+  background: rgba(8,17,27,.8);
+  backdrop-filter: blur(8px);
+}
+/* Nighttime weather backgrounds */
+
+details.outdoor-card[data-weather$="-night"] {
+  background-position: center;
+}
+
+details.outdoor-card[data-weather="clear-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.30), rgba(5,10,25,.72)),
+    url("/images/weather/clear-night.jpg");
+}
+
+details.outdoor-card[data-weather="partly-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.35), rgba(5,10,25,.76)),
+    url("/images/weather/partly-night.jpg");
+}
+
+details.outdoor-card[data-weather="cloudy-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.35), rgba(5,10,25,.78)),
+    url("/images/weather/cloudy-night.jpg");
+}
+
+details.outdoor-card[data-weather="fog-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.3), rgba(5,10,25,.76)),
+    url("/images/weather/fog-night.jpg");
+}
+
+details.outdoor-card[data-weather="rain-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.3), rgba(5,10,25,.8)),
+    url("/images/weather/rain-night.jpg");
+}
+
+details.outdoor-card[data-weather="snow-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.25), rgba(5,10,25,.72)),
+    url("/images/weather/snow-night.jpg");
+}
+
+details.outdoor-card[data-weather="storm-night"] {
+  background-image:
+    linear-gradient(180deg, rgba(5,10,25,.25), rgba(5,10,25,.82)),
+    url("/images/weather/storm-night.jpg");
+}
+
+/* Quiet, flatter surfaces: keep the information prominent, not the cards. */
+.card,
+.dashboard-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+body {
+  background: var(--bg);
+}
+
+.device-card:hover {
+  transform: none;
+  border-color: #40546b;
+}
+
+.reading {
+  border-top-color: rgba(145, 161, 181, .14);
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  
+  <aside class="sidebar">
+    <button class="sidebar-toggle" id="sidebar-toggle" title="Collapse sidebar">‹</button>
+
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div>
+        <strong>AIRTHINGS</strong>
+        <small>LOCAL ENVIRONMENT MONITOR</small>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav">
+        <button class="active" data-page="overview"><span class="nav-icon">⌂</span>Overview</button>
+        <button data-page="devices"><span class="nav-icon">◉</span>Devices</button>
+        <button data-page="explore"><span class="nav-icon">⌁</span>Explore</button>
+        <button data-page="collector"><span class="nav-icon">⚙</span>Collector</button>
+      </nav>
+    </div>
+
+    <div class="side-foot">
+      <span class="dot" id="side-dot"></span>
+      <span id="side-status">Connecting…</span>
+      <div style="margin-top:7px">Data stays on this machine.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><div class="eyebrow">Airthings / Local</div><h1 id="page-title">Overview</h1><p class="subtitle" id="page-subtitle">Your environment, indoors and outdoors.</p></div>
+      <div class="top-actions"><span class="status-pill" id="header-status">● Connecting</span><button class="ghost" onclick="refresh_all()">↻ Refresh</button></div>
+    </header>
+
+    <section class="page active" id="page-overview">
+      <div class="grid stats">
+        <div class="card"><div class="stat-label">Registered devices</div><div class="stat-value" id="stat-devices">—</div><div class="stat-foot">Across your Airthings fleet</div></div>
+        <div class="card"><div class="stat-label">Online / enabled</div><div class="stat-value" id="stat-enabled">—</div><div class="stat-foot">Enabled in the collector registry</div></div>
+        <div class="card"><div class="stat-label">Latest CO₂</div><div class="stat-value" id="stat-co2">—</div><div class="stat-foot">Most recent available reading</div></div>
+        <div class="card"><div class="stat-label">Latest temperature</div><div class="stat-value" id="stat-temp">—</div><div class="stat-foot">Most recent available reading</div></div>
+      </div>
+      <div class="section-head"><div><h2>Your devices</h2><p>Choose a device to inspect its readings and history.</p></div><button onclick="show_page('devices')">All devices →</button></div>
+      <div class="grid device-grid" id="overview-devices"><div class="empty">Loading devices…</div></div>
+      
+      
+<details class="card outdoor-card" id="outdoor-card">
+  <summary class="outdoor-summary">
+    <div class="outdoor-summary-line">
+      <span class="weather-icon" id="weather-icon">🌤️</span>
+      <strong id="weather-description">Loading weather…</strong>
+      <span class="outdoor-summary-detail" id="weather-detail">
+        Current outdoor conditions
+      </span>
+      <span id="outdoor-location-label" hidden></span>
+      <span class="outdoor-chevron">⌄</span>
+    </div>
+  </summary>
+
+  <div class="outdoor-expanded">
+    <div class="outdoor-readings" id="outdoor-readings">
+      <div class="muted">Loading outdoor conditions…</div>
+    </div>
+
+    <details class="outdoor-location-picker">
+      <summary>⌖ Change outdoor location</summary>
+      <div class="outdoor-location-content">
+        <div class="field">
+          <label for="outdoor-search">Search address, postal code, or city</label>
+          <div class="outdoor-search-row">
+            <input
+              id="outdoor-search"
+              type="text"
+              placeholder="Enter a location…"
+              maxlength="200"
+            >
+            <button class="primary" onclick="search_outdoor()">Search</button>
+          </div>
+        </div>
+        <div id="outdoor-search-results"></div>
+      </div>
+    </details>
+
+    <div class="footer-note">
+      Weather and air quality are model estimates from Open-Meteo, not local sensor measurements.
+      Location search © OpenStreetMap contributors.
+      <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+      ·
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+    </div>
+
+    <button class="ghost" onclick="load_outdoor()">↻ Refresh</button>
+  </div>
+</details>
+
+      <div class="section-head" style="margin-top:22px">
+        <div>
+          <h2>My dashboard</h2>
+          <p>Compare measurements across your devices.</p>
+        </div>
+        <button class="primary" onclick="add_dashboard_panel()">＋ Add panel</button>
+      </div>
+      <div id="dashboard-panels" class="dashboard-panels"></div>
+      <div class="card" style="margin-top:16px">
+        <div class="section-head">
+          <div><h2>Collector</h2><p>Collection activity</p></div>
+          <button class="ghost" onclick="show_page('collector')">Details</button>
+        </div>
+        <div id="overview-collector" class="muted">Loading collector status…</div>
+      </div>
+
+    </section>
+
+    <section class="page" id="page-devices">
+      <div class="section-head"><div><h2>Device registry</h2><p>Manage names and collection participation without deleting history.</p></div><div class="toolbar"><button class="ghost" onclick="load_devices()">↻ Refresh list</button></div></div>
+      <div class="device-list" id="device-list"><div class="empty">Loading devices…</div></div>
+      <div id="device-detail-panel" style="display:none;margin-top:18px"></div>
+    </section>
+
+    <section class="page" id="page-explore">
+      <div class="card">
+        <div class="section-head"><div><h2>Compare readings</h2><p>Overlay historical measurements from multiple devices.</p></div></div>
+        <div class="toolbar">
+          <select id="compare-metric">
+            <option value="temperature_c">Temperature (°C)</option><option value="humidity_pct">Humidity (%)</option><option value="pressure_hpa">Pressure (hPa)</option><option value="co2_ppm">CO₂ (ppm)</option><option value="voc">VOC (device-native)</option><option value="radon_st">Radon short-term</option><option value="radon_lt">Radon long-term</option>
+          </select>
+          <select id="compare-range"><option value="24">Last 24 hours</option><option value="72">Last 3 days</option><option value="168">Last 7 days</option><option value="720">Last 30 days</option><option value="all">All history</option></select>
+        </div>
+        <div class="check-list" id="compare-devices"></div>
+        <div class="chart-wrap" style="height:390px"><canvas id="compare-chart"></canvas></div>
+        <div class="footer-note">Drag to zoom · Shift + drag to pan · VOC values may use different native units between models. Gaps in source data are preserved.</div>
+      </div>
+    </section>
+
+    <section class="page" id="page-collector">
+      <div class="grid stats">
+        <div class="card"><div class="stat-label">Collector</div><div class="stat-value" id="collector-state">—</div><div class="stat-foot">Current job state</div></div>
+        <div class="card"><div class="stat-label">Queued jobs</div><div class="stat-value" id="collector-queued">—</div><div class="stat-foot">Waiting to run</div></div>
+        <div class="card"><div class="stat-label">Polling interval</div><div class="stat-value" id="collector-interval">—</div><div class="stat-foot">Between automatic history polls</div></div>
+        <div class="card"><div class="stat-label">Automatic lookback</div><div class="stat-value" id="collector-lookback">—</div><div class="stat-foot">Calculated as interval + 1 hour</div></div>
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <div class="section-head"><div><h2>Collection settings</h2><p>Configure how often the collector checks your devices.</p></div></div>
+          <div class="field"><label for="poll-interval">Polling interval</label><select id="poll-interval"><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60">Every hour</option><option value="120">Every 2 hours</option><option value="180">Every 3 hours</option><option value="240">Every 4 hours</option><option value="360">Every 6 hours</option><option value="720">Every 12 hours</option><option value="1440">Every 24 hours</option></select></div>
+          <div class="field"><label>Automatic history lookback (read-only)</label><div class="big-number" id="lookback-preview">4 hours</div><div class="footer-note">The lookback automatically includes one extra hour to avoid missing readings between polls.</div></div>
+          <div class="field"><label for="connect-delay">Delay between device connections (seconds)</label><input id="connect-delay" type="number" min="0" max="120" step="1"></div>
+          <button class="primary" onclick="save_settings()">Save settings</button>
+        </div>
+        <div class="card">
+          <div class="section-head"><div><h2>Manual collection</h2><p>Run a collection job on demand.</p></div></div>
+          <p class="muted">A normal query uses the automatic lookback window. Full history requests the complete available history.</p>
+          <div class="toolbar" style="margin-top:17px"><button class="primary" onclick="start_query('/api/query')">Poll enabled devices</button><button onclick="start_query('/api/query/full')">Retrieve full history</button></div>
+          <div class="field"><label for="query-device">Single device</label><select id="query-device"></select></div>
+          <div class="toolbar"><button onclick="query_selected(false)">Poll selected device</button><button onclick="query_selected(true)">Full history for selected</button></div>
+          <div class="footer-note" id="manual-message"></div>
+        </div>
+      </div>
+      <div class="grid two-col">
+        <div class="card"><div class="section-head"><div><h2>Latest output</h2><p>Most recent collector process output.</p></div></div><div id="latest-output" class="muted">No output yet.</div></div>
+        <div class="card"><div class="section-head"><div><h2>Job queue</h2><p>Current and pending collection work.</p></div><button class="ghost" onclick="load_jobs()">↻</button></div><div id="job-list" class="muted">Loading jobs…</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<nav class="mobile-nav">
+  <button class="active" data-page="overview"><span>⌂</span>Overview</button><button data-page="devices"><span>◉</span>Devices</button><button data-page="explore"><span>⌁</span>Explore</button><button data-page="collector"><span>⚙</span>Collector</button>
+</nav>
+<div class="toast" id="toast"></div>
+<script>
+const state = {
+  devices: [],
+  config: {},
+  status: {},
+  jobs: {},
+  charts: {},
+  selected_serial: null,
+  dashboard_panels: [],
+  jobs_poll_timer: null,
+  outdoor_search_results: []
+};
+
+const DASHBOARD_METRICS = [
+  ["temperature_c","Temperature (°C)"],
+  ["humidity_pct","Humidity (%)"],
+  ["co2_ppm","CO₂ (ppm)"],
+  ["voc","VOC"],
+  ["pressure_hpa","Pressure (hPa)"],
+  ["radon_st","Radon short-term"],
+  ["radon_lt","Radon long-term"]
+];
+
+const DASHBOARD_RANGES = [
+  ["6","6 hours"],
+  ["24","24 hours"],
+  ["72","3 days"],
+  ["168","7 days"],
+  ["720","30 days"],
+  ["all","All history"]
+];
+const PAGE_INFO = {
+  overview: ["Overview", "Your indoor environment, at a glance."],
+  devices: ["Devices", "Your registered Airthings devices and their history."],
+  explore: ["Explore", "Compare measurements and investigate historical trends."],
+  collector: ["Collector", "Scheduling, manual collection and process activity."]
+};
+const METRIC_LABELS = {temperature_c:"Temperature (°C)",humidity_pct:"Humidity (%)",pressure_hpa:"Pressure (hPa)",co2_ppm:"CO₂ (ppm)",voc:"VOC",radon_st:"Radon short-term",radon_lt:"Radon long-term"};
+const SERIES_COLORS = ["#69d5c4","#80aaff","#f2bd67","#c49aff","#ff8995","#83d69b","#e5a9d0"];
+const $ = id => document.getElementById(id);
+const fmt = (value, digits = 1) =>
+  value === null || value === undefined || !Number.isFinite(Number(value))
+    ? "—"
+    : Number(value).toFixed(digits);
+const display_time = value => value ? new Date(typeof value === "number" ? value * 1000 : value).toLocaleString() : "No readings yet";
+function toast(message){const el=$("toast");el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2800)}
+async function api(url, options={}){const response=await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);return data}
+// --------------------------------------------------
+// Outdoor conditions
+// --------------------------------------------------
+
+async function search_outdoor() {
+  const query = $("outdoor-search").value.trim();
+  const results = $("outdoor-search-results");
+
+  if (query.length < 3) {
+    toast("Enter at least 3 characters.");
+    return;
+  }
+
+  results.innerHTML = '<div class="muted">Searching…</div>';
+
+  try {
+    const data = await api(
+      `/api/outdoor/search?q=${encodeURIComponent(query)}`
+    );
+
+    state.outdoor_search_results = data.results || [];
+
+    if (!state.outdoor_search_results.length) {
+      results.innerHTML =
+        '<div class="muted">No matching locations found.</div>';
+      return;
+    }
+
+    results.innerHTML = `
+      <div class="outdoor-search-results">
+        ${state.outdoor_search_results.map((item, index) => `
+          <button
+            class="outdoor-search-result"
+            onclick="select_outdoor_location(${index})">
+            <span>📍 ${escape_html(item.name)}</span>
+          </button>
+        `).join("")}
+      </div>
+    `;
+  } catch (error) {
+    results.innerHTML = "";
+    toast(error.message);
+  }
+}
+
+async function select_outdoor_location(index) {
+  const location = state.outdoor_search_results[index];
+  if (!location) return;
+
+  try {
+    await api("/api/outdoor/location", {
+      method: "POST",
+      body: JSON.stringify(location)
+    });
+
+    $("outdoor-search-results").innerHTML = "";
+    $("outdoor-search").value = "";
+
+    toast("Outdoor location saved.");
+
+    await load_outdoor();
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+function outdoor_tile(label, value, unit = "", digits = 1) {
+  return `
+    <div class="outdoor-reading">
+      <strong>${value === null || value === undefined ? "—" : fmt(value, digits)}${unit}</strong>
+      <span>${label}</span>
+    </div>
+  `;
+}
+
+function get_weather_condition(code) {
+  if (code === 0) return ["☀️", "Clear sky"];
+  if (code === 1) return ["🌤️", "Mainly clear"];
+  if (code === 2) return ["⛅", "Partly cloudy"];
+  if (code === 3) return ["☁️", "Overcast"];
+
+  if ([45, 48].includes(code)) return ["🌫️", "Foggy"];
+
+  if ([51, 53, 55, 56, 57].includes(code))
+    return ["🌦️", "Drizzle"];
+
+  if ([61, 63, 65, 66, 67].includes(code))
+    return ["🌧️", "Rain"];
+
+  if ([71, 73, 75, 77].includes(code))
+    return ["❄️", "Snow"];
+
+  if ([80, 81, 82].includes(code))
+    return ["🌧️", "Rain showers"];
+
+  if ([85, 86].includes(code))
+    return ["🌨️", "Snow showers"];
+
+  if ([95, 96, 99].includes(code))
+    return ["⛈️", "Thunderstorms"];
+
+  return ["🌡️", "Current conditions"];
+}
+
+async function load_outdoor() {
+  try {
+    const data = await api("/api/outdoor");
+
+    const weather = data.weather || {};
+    const air = data.air || {};
+    const [weather_icon, weather_description] =
+      get_weather_condition(weather.weather_code);
+
+    const code = Number(weather.weather_code);
+
+    let scene = "cloudy";
+
+    if (code === 0) scene = "clear";
+    else if ([1, 2].includes(code)) scene = "partly";
+    else if (code === 3) scene = "cloudy";
+    else if ([45, 48].includes(code)) scene = "fog";
+    else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) scene = "rain";
+    else if ([71, 73, 75, 77, 85, 86].includes(code)) scene = "snow";
+    else if ([95, 96, 99].includes(code)) scene = "storm";
+
+
+    const now = new Date();
+    const sunrise = weather.sunrise ? new Date(weather.sunrise) : null;
+    const sunset = weather.sunset ? new Date(weather.sunset) : null;
+
+    const isNight = sunrise && sunset
+      ? now < sunrise || now >= sunset
+      : false;
+
+    const sceneVariant = isNight ? `${scene}-night` : scene;
+
+    $("outdoor-card")?.setAttribute("data-weather", sceneVariant);
+
+    $("weather-icon").textContent = weather_icon;
+    $("weather-description").textContent = weather_description;
+
+
+    $("weather-detail").textContent =
+      `${fmt(weather.temperature_2m, 1)}°C · Feels like ${fmt(weather.apparent_temperature, 1)}°C`;
+
+    $("outdoor-location-label").textContent =
+      data.location?.name || "Unknown location";
+
+    $("outdoor-readings").innerHTML = [
+      outdoor_tile(
+        "Temperature",
+        weather.temperature_2m,
+        " °C"
+      ),
+      outdoor_tile(
+        "Feels like",
+        weather.apparent_temperature,
+        " °C"
+      ),
+      outdoor_tile(
+        "Humidity",
+        weather.relative_humidity_2m,
+        "%"
+      ),
+      outdoor_tile(
+        "Pressure",
+        weather.pressure_msl,
+        " hPa"
+      ),
+      outdoor_tile(
+        "PM2.5",
+        air.pm2_5,
+        " µg/m³"
+      ),
+      outdoor_tile(
+        "Ozone (O₃)",
+        air.ozone,
+        " µg/m³"
+      )
+    ].join("");
+
+    const fetched = data.fetched_at
+      ? new Date(data.fetched_at).toLocaleTimeString()
+      : "Unknown";
+
+    $("outdoor-location-label").textContent +=
+      ` · Updated ${fetched}`;
+
+  } catch (error) {
+    $("outdoor-readings").innerHTML =
+      `<div class="muted">${escape_html(error.message)}</div>`;
+  }
+}
+function show_page(page){document.querySelectorAll(".page").forEach(el=>el.classList.toggle("active",el.id===`page-${page}`));document.querySelectorAll("[data-page]").forEach(el=>el.classList.toggle("active",el.dataset.page===page));$("page-title").textContent=PAGE_INFO[page][0];$("page-subtitle").textContent=PAGE_INFO[page][1];if(page==="explore")render_comparison();if(page==="collector"){load_config();load_jobs()}if(page==="devices")load_devices()}
+document.querySelectorAll("[data-page]").forEach(button=>button.addEventListener("click",()=>show_page(button.dataset.page)));
+
+function reading_tile(label, value, unit = "", digits = 0, icon = "", status = null) {
+  const formatted = value === null || value === undefined
+    ? "—"
+    : fmt(value, digits);
+  const statusLabel = status
+    ? `<span class="reading-status ${status}">${status === "good" ? "Good" : status === "fair" ? "Fair" : "Poor"}</span>`
+    : "";
+
+  return `
+    <div class="reading">
+      <div class="reading-top">
+        <span class="reading-name">
+          ${icon ? `<span class="reading-icon">${icon}</span>` : ""}
+          ${label}
+        </span>
+        <strong class="reading-value ${status || ""}">${formatted}${unit}</strong>
+      </div>
+      ${statusLabel}
+    </div>
+  `;
+}
+
+// Thresholds are read from each device's saved configuration in devices.json.
+// A missing threshold is intentionally treated as unclassified, not guessed.
+function classify_metric_value(device, metric, value) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+    return null;
+  }
+
+  const config = device?.config || {};
+  const reading = Number(value);
+
+  if (metric === "humidity_pct") {
+    const poorToFair = Number(config.humidity_poor_to_fair);
+    const fairToGood = Number(config.humidity_fair_to_good);
+    const goodToFair = Number(config.humidity_good_to_fair);
+    const fairToPoor = Number(config.humidity_fair_to_poor);
+
+    if (![poorToFair, fairToGood, goodToFair, fairToPoor].every(Number.isFinite)) return null;
+    if (reading < poorToFair || reading >= fairToPoor) return "poor";
+    if (reading < fairToGood || reading >= goodToFair) return "fair";
+    return "good";
+  }
+
+  let lowKey;
+  let highKey;
+  if (metric === "radon_st" || metric === "radon_lt") {
+    lowKey = "radon_low";
+    highKey = "radon_high";
+  } else if (metric === "voc") {
+    lowKey = "voc_low";
+    highKey = "voc_high";
+  } else if (metric === "co2_ppm") {
+    lowKey = "co2_low";
+    highKey = "co2_high";
+  } else {
+    return null;
+  }
+
+  const low = Number(config[lowKey]);
+  const high = Number(config[highKey]);
+  if (!Number.isFinite(low) || !Number.isFinite(high)) return null;
+  if (reading < low) return "good";
+  if (reading < high) return "fair";
+  return "poor";
+}
+
+function threshold_segment_color(device, metric, context, fallback) {
+  const y0 = context?.p0?.parsed?.y;
+  const y1 = context?.p1?.parsed?.y;
+  const value = Number.isFinite(y0) && Number.isFinite(y1)
+    ? (y0 + y1) / 2
+    : Number.isFinite(y1) ? y1 : y0;
+  const status = classify_metric_value(device, metric, value);
+  if (status === "good") return "#5ed6a0";
+  if (status === "fair") return "#f2bd67";
+  if (status === "poor") return "#ff7d85";
+  return fallback;
+}
+
+function device_card(device) {
+  const latest = device.latest || {};
+  const enabled = device.enabled !== false;
+
+  const acp = device.latest_acp?.decoded || {};
+
+  const batteryVoltage = acp.battery_voltage_v ??
+    (acp.battery_mv != null ? Number(acp.battery_mv) / 1000 : null);
+
+  let batteryLevel = 0;
+  let batteryColor = "low";
+
+  if (batteryVoltage != null) {
+    if (batteryVoltage >= 3.8) {
+      batteryLevel = 100;
+      batteryColor = "good";
+    } else if (batteryVoltage >= 3.5) {
+      batteryLevel = 75;
+      batteryColor = "good";
+    } else if (batteryVoltage >= 3.2) {
+      batteryLevel = 50;
+      batteryColor = "medium";
+    } else if (batteryVoltage >= 2.9) {
+      batteryLevel = 25;
+      batteryColor = "low";
+    } else {
+      batteryLevel = 10;
+      batteryColor = "low";
+    }
+  }
+
+  const batteryIndicator = batteryVoltage != null
+    ? `<span class="battery-indicator ${batteryColor}"
+        title="Battery: ${fmt(batteryVoltage, 2)} V">
+        <span class="battery-shell">
+          <span class="battery-fill" style="width:${batteryLevel}%"></span>
+        </span>
+      </span>`
+    : "";
+
+  const sensors = {
+    WaveMini: [
+      ["Temperature", "temperature_c", "°C", 1, "🌡️"],
+      ["Humidity", "humidity_pct", "%", 0, "💧"],
+      ["VOC", "voc", " ppb", 0, "🌫️"],
+      ["Pressure", "pressure_hpa", " hPa", 0, "🎚️"],
+      ["Illuminance", "illuminance_lux", " lux", 0, "☀️"],
+      ["Battery", "battery", " V", 1, "🔋"]
+    ],
+    WavePlus: [
+      ["Temperature", "temperature_c", "°C", 1, "🌡️"],
+      ["Humidity", "humidity_pct", "%", 0, "💧"],
+      ["CO₂", "co2_ppm", " ppm", 0, "☁️"],
+      ["Pressure", "pressure_hpa", " hPa", 0, "🎚️"],
+      ["Radon (ST)", "radon_st", "", 0, "☢️"],
+      ["Radon (LT)", "radon_lt", "", 0, "☢️"],
+      ["Illuminance", "illuminance_lux", " lux", 0, "☀️"],
+      ["Battery", "battery_voltage_v", " V", 1, "🔋"]
+    ]
+  };
+
+  const modelSensors = sensors[device.model] || [
+    ["Temperature", "temperature_c", "°C", 1, "🌡️"],
+    ["Humidity", "humidity_pct", "%", 0, "💧"]
+  ];
+
+  const tiles = modelSensors
+    .map(([label, key, unit, digits, icon]) => {
+      let value;
+
+      if (key === "battery") {
+        value = latest.battery_voltage_v;
+
+        if (value === undefined || value === null) {
+          value = latest.battery_mv != null
+            ? Number(latest.battery_mv) / 1000
+            : null;
+        }
+      } else if (key === "voc") {
+        value = latest.voc ?? latest.voc_ppb;
+      } else {
+        value = latest[key];
+      }
+
+      if (value === undefined || value === null) return "";
+
+      const metric = key === "voc" ? "voc" : key;
+      const thresholdStatus = classify_metric_value(device, metric, value);
+      return reading_tile(label, value, unit, digits, icon, thresholdStatus);
+    })
+    .join("");
+
+  return `
+    <article class="card device-card"
+      onclick="open_device('${device.serial}')">
+
+      <div class="device-top">
+        <div>
+          <div class="device-name">
+            ${escape_html(device.name || device.model)}
+          </div>
+          <div class="device-model">
+            ${escape_html(device.model || "Airthings")} · ${device.serial}
+          </div>
+        </div>
+
+        <div class="device-status">
+          ${batteryIndicator}
+          <span class="badge ${enabled ? "" : "off"}">
+            ${enabled ? "Enabled" : "Disabled"}
+          </span>
+        </div>
+      </div>
+
+      <div class="readings">
+        ${tiles || '<div class="muted">No readings available yet.</div>'}
+      </div>
+
+      <div class="footer-note">
+        Last reading: ${display_time(device.last_reading_timestamp)}
+      </div>
+    </article>
+  `;
+}
+function escape_html(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function set_connection(ok,message){$("header-status").textContent=ok?"● Connected":"● Offline";$("header-status").style.color=ok?"var(--good)":"var(--bad)";$("side-status").textContent=message;$("side-dot").style.background=ok?"var(--good)":"var(--bad)"}
+async function refresh_all(){try{const [data,status]=await Promise.all([api("/api/data"),api("/api/status")]);state.devices=data.devices||[];state.status=status;render_overview();render_device_list();render_compare_checks();render_collector_status();set_connection(true,"Server connected")}catch(error){set_connection(false,"Server unavailable");toast(error.message)}}
+function render_overview_collector() {
+  const status = state.status;
+
+  $("overview-collector").innerHTML = `
+    <div class="big-number">${status.running ? "Running" : "Idle"}</div>
+    <p class="muted">${status.queued_jobs || 0} queued job(s)</p>
+    <p class="muted">Next poll: ${display_time(status.next_history_run)}</p>
+    <p class="muted">Automatic lookback: ${status.history_lookback_hours ?? "—"} hours</p>
+  `;
+}
+function render_overview(){
+ const devices=state.devices;const enabled=devices.filter(d=>d.enabled!==false);$("stat-devices").textContent=devices.length;$("stat-enabled").textContent=`${enabled.length} / ${devices.length}`;
+ const co2=devices.filter(d=>d.latest?.co2_ppm!==undefined).sort((a,b)=>(b.last_reading_timestamp||0)-(a.last_reading_timestamp||0))[0];
+ const temp=devices.filter(d=>d.latest?.temperature_c!==undefined).sort((a,b)=>(b.last_reading_timestamp||0)-(a.last_reading_timestamp||0))[0];
+ $("stat-co2").textContent=co2?`${co2.latest.co2_ppm} ppm`:"—";$("stat-temp").textContent=temp?`${fmt(temp.latest.temperature_c)} °C`:"—";
+ $("overview-devices").innerHTML=devices.length?devices.map(device_card).join(""):`<div class="empty">No devices registered yet.</div>`;
+  render_overview_collector();
+}
+
+function chart_options(y_title){return {responsive:true,maintainAspectRatio:false,interaction:{mode:"nearest",intersect:false},plugins:{legend:{labels:{color:"#aab8c8",usePointStyle:true,boxWidth:8}},tooltip:{backgroundColor:"#101b28",borderColor:"#31465b",borderWidth:1}},scales:{x:{type:"linear",ticks:{color:"#8293a8",maxTicksLimit:7,callback:value=>new Date(value).toLocaleString()},grid:{color:"rgba(130,150,170,.10)"}},y:{title:{display:!!y_title,text:y_title,color:"#91a1b5"},ticks:{color:"#8293a8"},grid:{color:"rgba(130,150,170,.10)"}}}}}
+function ensure_time_adapter(){/* Chart.js time axis uses numeric timestamps; no date adapter required when x values are numbers. */}
+
+function load_dashboard_layout() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem("airthings-dashboard-panels")
+    );
+
+    if (Array.isArray(saved) && saved.length) {
+      state.dashboard_panels = saved;
+    }
+  } catch {}
+
+  if (!state.dashboard_panels.length) {
+    const enabled = state.devices
+      .filter(d => d.enabled !== false)
+      .map(d => String(d.serial));
+
+    state.dashboard_panels = [
+      {
+        id: "temperature",
+        metric: "temperature_c",
+        range: "24",
+        devices: enabled
+      },
+      {
+        id: "voc",
+        metric: "voc",
+        range: "24",
+        devices: enabled
+      }
+    ];
+  }
+}
+
+function save_dashboard_layout() {
+  localStorage.setItem(
+    "airthings-dashboard-panels",
+    JSON.stringify(state.dashboard_panels)
+  );
+}
+
+function add_dashboard_panel() {
+  const enabled = state.devices
+    .filter(d => d.enabled !== false)
+    .map(d => String(d.serial));
+
+  state.dashboard_panels.push({
+    id: `panel-${Date.now()}`,
+    metric: "humidity_pct",
+    range: "24",
+    devices: enabled
+  });
+
+  save_dashboard_layout();
+  render_dashboard_panels();
+}
+
+function remove_dashboard_panel(id) {
+  state.charts[id]?.destroy();
+  delete state.charts[id];
+
+  state.dashboard_panels =
+    state.dashboard_panels.filter(p => p.id !== id);
+
+  save_dashboard_layout();
+  render_dashboard_panels();
+}
+
+function update_panel_setting(id, key, value) {
+  const panel = state.dashboard_panels.find(p => p.id === id);
+  if (!panel) return;
+
+  panel[key] = value;
+  save_dashboard_layout();
+
+  if (key === "metric") {
+    const panelElement = document.querySelector(
+      `#dashboard-panels .dashboard-panel:has(#chart-${id}) h2`
+    );
+    if (panelElement) {
+      panelElement.textContent = METRIC_LABELS[value] || value;
+    }
+  }
+  const chart = state.charts[id];
+
+  // A new timeframe should start with a fresh view.
+  if (key === "range" && chart?.resetZoom) {
+    chart.resetZoom();
+  }
+
+  // Metric and timeframe changes both fetch new data immediately.
+  update_dashboard_panel(panel);
+}
+
+function render_dashboard_panels() {
+  const container = $("dashboard-panels");
+  // Structural changes replace the canvases, so dispose of their old charts.
+  state.dashboard_panels.forEach(panel => {
+    if (state.charts[panel.id]) {
+      state.charts[panel.id].destroy();
+      delete state.charts[panel.id];
+    }
+  });
+  container.innerHTML = state.dashboard_panels.map(panel => {
+    const metric_options = DASHBOARD_METRICS.map(([value,label]) =>
+      `<option value="${value}" ${panel.metric === value ? "selected" : ""}>${label}</option>`
+    ).join("");
+
+    const range_options = DASHBOARD_RANGES.map(([value,label]) =>
+      `<option value="${value}" ${panel.range === value ? "selected" : ""}>${label}</option>`
+    ).join("");
+
+    const device_options = state.devices.map(device => `
+      <label class="panel-device">
+        <input type="checkbox"
+          ${panel.devices.includes(String(device.serial)) ? "checked" : ""}
+          onchange="toggle_panel_device('${panel.id}','${device.serial}',this.checked)">
+        ${escape_html(device.name || device.serial)}
+      </label>
+    `).join("");
+
+    return `
+      <div class="dashboard-panel">
+        <div class="section-head">
+          <div>
+            <h2>${METRIC_LABELS[panel.metric] || panel.metric}</h2>
+            <p>Historical comparison</p>
+          </div>
+          <button class="ghost danger"
+            onclick="remove_dashboard_panel('${panel.id}')">✕</button>
+        </div>
+
+        <div class="panel-controls">
+          <select onchange="update_panel_setting('${panel.id}','metric',this.value)">
+            ${metric_options}
+          </select>
+
+          <select onchange="update_panel_setting('${panel.id}','range',this.value)">
+            ${range_options}
+          </select>
+        </div>
+
+        <div class="panel-devices">${device_options}</div>
+
+        <div class="panel-chart">
+          <canvas id="chart-${panel.id}"></canvas>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  state.dashboard_panels.forEach(update_dashboard_panel);
+}
+
+function toggle_panel_device(id, serial, checked) {
+  const panel = state.dashboard_panels.find(p => p.id === id);
+  if (!panel) return;
+
+  serial = String(serial);
+
+  if (checked && !panel.devices.includes(serial)) {
+    panel.devices.push(serial);
+  } else {
+    panel.devices = panel.devices.filter(s => s !== serial);
+  }
+
+  save_dashboard_layout();
+  update_dashboard_panel(panel);
+}
+
+async function update_dashboard_panel(panel) {
+  const canvas = $(`chart-${panel.id}`);
+  if (!canvas) return;
+
+  const serials = panel.devices;
+
+  let series = [];
+
+  if (serials.length) {
+    try {
+      const result = await api(
+        `/api/compare?serials=${encodeURIComponent(serials.join(","))}` +
+        `&metric=${encodeURIComponent(panel.metric)}` +
+        `&hours=${encodeURIComponent(panel.range)}`
+      );
+
+      series = result.series || [];
+    } catch (error) {
+      console.error("Dashboard panel error:", error);
+    }
+  }
+
+  const datasets = series.map((item, i) => {
+    const baseColor = SERIES_COLORS[i % SERIES_COLORS.length];
+    const device = state.devices.find(d => String(d.serial) === String(item.serial));
+    return {
+      label: item.name,
+      data: item.points,
+      borderColor: baseColor,
+      backgroundColor: baseColor,
+      segment: {
+        borderColor: context => threshold_segment_color(
+          device, panel.metric, context, baseColor
+        )
+      },
+      pointRadius: 0,
+      borderWidth: 1.8,
+      tension: 0,
+      spanGaps: false
+    };
+  });
+
+  // Update an existing chart rather than destroying it.
+  // This preserves zoom and pan state during refreshes.
+  if (state.charts[panel.id]) {
+    const chart = state.charts[panel.id];
+    chart.data.datasets = datasets;
+    chart.update("none");
+    return;
+  }
+
+  state.charts[panel.id] = new Chart(canvas, {
+    type: "line",
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: "#aab8c8",
+            usePointStyle: true
+          }
+        },
+        zoom: {
+          zoom: {
+            wheel: { enabled: false },
+            drag: { enabled: true },
+            mode: "x"
+          },
+          pan: {
+            enabled: true,
+            mode: "x",
+            modifierKey: "shift"
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: "linear",
+          bounds: "data",
+          ticks: {
+            color: "#8293a8",
+            maxTicksLimit: 5,
+            autoSkip: true,
+            maxRotation: 0,
+            minRotation: 0,
+            padding: 2,
+            callback: value => {
+              const date = new Date(value);
+
+              if (Number(panel.range) <= 24) {
+                return date.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit"
+                });
+              }
+
+              return date.toLocaleDateString([], {
+                month: "short",
+                day: "numeric"
+              });
+            }
+          },
+          grid: {
+            color: "rgba(130,150,170,.1)"
+          }
+        },
+        y: {
+          ticks: {
+            color: "#8293a8",
+            padding: 5
+          },
+          grid: {
+            color: "rgba(130,150,170,.1)"
+          }
+        }
+      },
+      layout: {
+        padding: {
+          left: 0,
+          right: 4,
+          top: 4,
+          bottom: 0
+        }
+      }
+    }
+  });
+}
+
+async function load_devices(){try{state.devices=await api("/api/devices");render_device_list();render_compare_checks()}catch(e){toast(e.message)}}
+function render_device_list(){
+ const list=$("device-list");if(!state.devices.length){list.innerHTML='<div class="empty">No devices registered.</div>';return}
+ list.innerHTML=state.devices.map(d=>`<div class="device-row"><div class="device-row-main"><strong>${escape_html(d.name||d.model)}</strong><div class="muted">${escape_html(d.model)} · Serial ${d.serial} · ${d.record_count||0} records</div><div class="footer-note">Last reading: ${display_time(d.last_reading_timestamp)}</div></div><span class="badge ${d.enabled===false?"off":""}">${d.enabled===false?"Disabled":"Enabled"}</span><div class="device-row-actions"><button onclick="open_device('${d.serial}')">Inspect</button><button onclick="rename_device('${d.serial}')">Rename</button><button onclick="toggle_device('${d.serial}',${d.enabled!==false})">${d.enabled===false?"Enable":"Disable"}</button></div></div>`).join("");
+}
+async function rename_device(serial){const device=state.devices.find(d=>String(d.serial)===String(serial));const name=prompt("Device name:",device?.name||"");if(name===null)return;try{await api(`/api/device/${serial}`,{method:"PATCH",body:JSON.stringify({name})});await load_devices();await refresh_all();toast("Device renamed")}catch(e){toast(e.message)}}
+async function toggle_device(serial,enabled){try{await api(`/api/device/${serial}`,{method:"PATCH",body:JSON.stringify({enabled:!enabled})});await load_devices();await refresh_all();toast(enabled?"Device disabled":"Device enabled")}catch(e){toast(e.message)}}
+async function open_device(serial){
+ state.selected_serial=String(serial);const panel=$("device-detail-panel");panel.style.display="block";panel.innerHTML='<div class="empty">Loading device history…</div>';
+ try{const result=await api(`/api/device/${encodeURIComponent(serial)}`);const d=result.device;const latest=d.latest||{};panel.innerHTML=`<div class="card"><div class="section-head"><div><h2>${escape_html(d.name||d.model)}</h2><p>${escape_html(d.model)} · Serial ${d.serial} · ${result.history.length.toLocaleString()} history records</p></div><button class="ghost" onclick="close_device()">Close</button></div><div class="device-detail"><div><div class="chart-wrap" style="height:300px"><canvas id="device-history-chart"></canvas></div><div class="toolbar" style="margin-top:12px"><button onclick="start_query('/api/query/${d.serial}')">Poll this device</button><button onclick="start_query('/api/query/full/${d.serial}')">Full history</button></div></div><div><div class="detail-metrics">${metric_detail("Temperature",latest.temperature_c,"°C")}${metric_detail("Humidity",latest.humidity_pct,"%")}${metric_detail("Pressure",latest.pressure_hpa," hPa")}${metric_detail("CO₂",latest.co2_ppm," ppm")}${metric_detail("VOC",latest.voc_ppb??latest.voc,"")}${metric_detail("Radon short-term",latest.radon_st,"")}${metric_detail("Radon long-term",latest.radon_lt,"")}${metric_detail("Illuminance",d.latest_acp?.decoded?.illuminance_lux??d.latest_acp?.decoded?.illuminance_raw,"")}</div><div class="field"><label>Rename device</label><input id="detail-name" value="${escape_html(d.name||"")}" maxlength="60"></div><div class="toolbar"><button onclick="save_detail_name('${d.serial}')">Save name</button><button onclick="toggle_device('${d.serial}',${d.enabled!==false})">${d.enabled===false?"Enable":"Disable"}</button></div><p class="footer-note">Last reading: ${display_time(d.last_reading_timestamp)}</p></div></div></div>`;
+ render_device_history(result.history);
+ }catch(e){panel.innerHTML=`<div class="empty">${escape_html(e.message)}</div>`}
+}
+function metric_detail(label,value,unit=""){return `<div class="metric-tile"><strong>${value===undefined||value===null?"—":fmt(value,1)}${unit}</strong><span>${label}</span></div>`}
+function render_device_history(history){const ctx=$("device-history-chart");if(!ctx||!window.Chart)return;if(state.charts.device)state.charts.device.destroy();const points=history.map(r=>({x:(r._timestamp??r.timestamp??r.block_timestamp)*1000,y:r.temperature_c})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));state.charts.device=new Chart(ctx,{type:"line",data:{datasets:[{label:"Temperature °C",data:points,borderColor:"#69d5c4",backgroundColor:"#69d5c4",pointRadius:0,borderWidth:1.7,tension:0,spanGaps:false}]},options:{...chart_options("°C"),plugins:{...chart_options("°C").plugins,zoom:{zoom:{wheel:{enabled:false},drag:{enabled:true},mode:"x"},pan:{enabled:true,mode:"x",modifierKey:"shift"}}}}})}
+function close_device(){$("device-detail-panel").style.display="none";state.selected_serial=null}
+async function save_detail_name(serial){const name=$("detail-name").value;try{await api(`/api/device/${serial}`,{method:"PATCH",body:JSON.stringify({name})});await refresh_all();await open_device(serial);toast("Name saved")}catch(e){toast(e.message)}}
+function render_compare_checks(){$("compare-devices").innerHTML=state.devices.map((d,i)=>`<label class="check-item"><input type="checkbox" value="${d.serial}" ${d.enabled===false?"":"checked"}><span>${escape_html(d.name||d.serial)}</span></label>`).join("")}
+async function render_comparison() {
+  const serials = [
+    ...document.querySelectorAll('#compare-devices input:checked')
+  ].map(el => el.value);
+
+  if (!serials.length) {
+    if (state.charts.compare) {
+      state.charts.compare.destroy();
+      delete state.charts.compare;
+    }
+
+    $("compare-chart").parentElement.innerHTML =
+      '<div class="empty">Select at least one device to compare.</div><canvas id="compare-chart" style="display:none"></canvas>';
+    return;
+  }
+
+  const metric = $("compare-metric").value;
+  const range = $("compare-range").value;
+
+  try {
+    const result = await api(
+      `/api/compare?serials=${encodeURIComponent(serials.join(","))}` +
+      `&metric=${encodeURIComponent(metric)}` +
+      `&hours=${encodeURIComponent(range)}`
+    );
+
+    const canvas = $("compare-chart");
+    canvas.style.display = "block";
+
+    const datasets = result.series.map((series, i) => {
+      const baseColor = SERIES_COLORS[i % SERIES_COLORS.length];
+      const device = state.devices.find(d => String(d.serial) === String(series.serial));
+      return {
+        label: series.name,
+        data: series.points,
+        borderColor: baseColor,
+        backgroundColor: baseColor,
+        segment: {
+          borderColor: context => threshold_segment_color(
+            device, metric, context, baseColor
+          )
+        },
+        pointRadius: 0,
+        borderWidth: 1.8,
+        tension: 0,
+        spanGaps: false
+      };
+    });
+
+    if (state.charts.compare) {
+      const chart = state.charts.compare;
+      chart.data.datasets = datasets;
+      chart.options.scales.y.title = {
+        display: true,
+        text: METRIC_LABELS[metric] || metric
+      };
+      chart.resetZoom();
+      chart.update("none");
+      return;
+    }
+
+    state.charts.compare = new Chart(canvas, {
+      type: "line",
+      data: { datasets },
+      options: {
+        ...chart_options(METRIC_LABELS[metric] || metric),
+        plugins: {
+          ...chart_options().plugins,
+          zoom: {
+            zoom: {
+              wheel: { enabled: false },
+              drag: { enabled: true },
+              mode: "x"
+            },
+            pan: {
+              enabled: true,
+              mode: "x",
+              modifierKey: "shift"
+            }
+          }
+        }
+      }
+    });
+
+  } catch (e) {
+    toast(e.message);
+  }
+}
+function reset_compare_zoom(){state.charts.compare?.resetZoom()}
+async function load_config(){try{state.config=await api("/api/config");const c=state.config;
+if (c.outdoor_location) {
+  $("outdoor-location-label").textContent =
+    c.outdoor_location.name;
+}
+$("poll-interval").value=String(c.history_interval_minutes);$("connect-delay").value=c.device_connect_delay_seconds??5;$("lookback-preview").textContent=`${c.history_lookback_hours} hours`;$("collector-interval").textContent=`${c.history_interval_minutes}m`;$("collector-lookback").textContent=`${c.history_lookback_hours}h`;populate_query_devices()}catch(e){toast(e.message)}}
+$("poll-interval").addEventListener("change",()=>{$("lookback-preview").textContent=`${Math.ceil(Number($("poll-interval").value)/60)+1} hours`});
+$("outdoor-search").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    search_outdoor();
+  }
+});
+async function save_settings(){try{const result=await api("/api/config",{method:"POST",body:JSON.stringify({history_interval_minutes:Number($("poll-interval").value),device_connect_delay_seconds:Number($("connect-delay").value)})});state.config=result;await load_config();await refresh_all();toast("Settings saved")}catch(e){toast(e.message)}}
+function populate_query_devices(){$("query-device").innerHTML=state.devices.map(d=>`<option value="${d.serial}">${escape_html(d.name||d.serial)} · ${d.serial}</option>`).join("")}
+async function start_query(endpoint){try{const result=await api(endpoint,{method:"POST",body:"{}"});$("manual-message").textContent=`Job #${result.job.id} queued.`;await load_jobs();toast("Collection job queued")}catch(e){toast(e.message)}}
+function query_selected(full){const serial=$("query-device").value;if(!serial)return toast("No device selected");start_query(full?`/api/query/full/${serial}`:`/api/query/${serial}`)}
+async function load_jobs() {
+  try {
+    state.jobs = await api("/api/jobs");
+    render_jobs();
+
+    const running = !!state.jobs.active;
+
+    if (running && !state.jobs_poll_timer) {
+      state.jobs_poll_timer = setInterval(load_jobs, 2000);
+    }
+
+    if (!running && state.jobs_poll_timer) {
+      clearInterval(state.jobs_poll_timer);
+      state.jobs_poll_timer = null;
+    }
+
+  } catch (e) {
+    $("job-list").textContent = e.message;
+  }
+}
+function render_jobs(){const jobs=[];if(state.jobs.active)jobs.push(state.jobs.active);jobs.push(...(state.jobs.queued||[]));if(!jobs.length && state.jobs.last)jobs.push(state.jobs.last);$("job-list").innerHTML=jobs.length?jobs.map(j=>`<div class="job"><div class="job-head"><strong>#${j.id} · ${escape_html(j.type)}</strong><span class="pill">${escape_html(j.status)}</span></div><div class="footer-note">${j.serial?`Device ${j.serial} · `:""}${display_time(j.started_at||j.created_at)}</div></div>`).join(""):'<div class="muted">No jobs recorded.</div>';const output=state.jobs.active?.output||state.jobs.last?.output||"";$("latest-output").innerHTML=output?`<pre>${escape_html(output.slice(-12000))}</pre>`:'<div class="muted">No collector output yet.</div>'}
+function render_collector_status(){const s=state.status;$("collector-state").textContent=s.running?"Running":"Idle";$("collector-queued").textContent=s.queued_jobs??0;$("collector-interval").textContent=`${s.history_interval_minutes??"—"}m`;$("collector-lookback").textContent=`${s.history_lookback_hours??"—"}h`}
+
+
+function init_sidebar() {
+  const app = document.querySelector(".app");
+  const toggle = document.getElementById("sidebar-toggle");
+
+  if (!app || !toggle) return;
+
+  const saved = localStorage.getItem("sidebar-collapsed") === "true";
+
+  function setCollapsed(collapsed) {
+    app.classList.toggle("sidebar-collapsed", collapsed);
+
+    toggle.innerHTML = collapsed
+      ? `<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>`
+      : `<svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>`;
+
+    toggle.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+    toggle.setAttribute("aria-label", toggle.title);
+
+    localStorage.setItem("sidebar-collapsed", collapsed);
+  }
+
+  setCollapsed(saved);
+
+  toggle.addEventListener("click", () => {
+    setCollapsed(!app.classList.contains("sidebar-collapsed"));
+  });
+}
+
+function init_explore_controls() {
+  $("compare-metric").addEventListener("change", render_comparison);
+  $("compare-range").addEventListener("change", render_comparison);
+
+  $("compare-devices").addEventListener("change", event => {
+    if (event.target.matches('input[type="checkbox"]')) {
+      render_comparison();
+    }
+  });
+}
+async function poll_status() {
+  try {
+    state.status = await api("/api/status");
+    render_collector_status();
+    render_overview_collector();
+
+    if ($("page-collector").classList.contains("active")) {
+      await load_jobs();
+    }
+  } catch {}
+}
+async function init() {
+  if (window.Chart && window.ChartZoom) {
+    Chart.register(window.ChartZoom);
+  }
+
+  init_explore_controls();
+  init_sidebar();
+  await refresh_all();
+  load_dashboard_layout();
+  render_dashboard_panels();
+
+  await load_config();
+  await load_jobs();
+  await load_outdoor();
+
+  setInterval(poll_status, 5000);
+
+  // Outdoor conditions refresh independently of Airthings polling.
+  setInterval(load_outdoor, 10 * 60 * 1000);
+
+  // Refresh actual sensor data quietly once per minute.
+  setInterval(async () => {
+    await refresh_all();
+
+    if ($("page-overview").classList.contains("active")) {
+      await Promise.all(
+        state.dashboard_panels.map(update_dashboard_panel)
+      );
+    }
+  }, 60000);
+}
+
+init();
+</script>
+</body>
+</html>

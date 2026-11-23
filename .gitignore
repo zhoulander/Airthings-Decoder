@@ -1,0 +1,22 @@
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Old test code
+Old/
+
+# Device-specific configuration
+devices.json
+
+# Collected Airthings data
+history/
+dashboard/device_health_*
+dashboard/server_config.json
+
+# Editor settings
+.DS_Store
