@@ -714,6 +714,65 @@ class WavePlus(WaveGeneric):
             "records": records,
         }
 
+
+    async def _get_history_sync_state(self):
+        """Return the current Wave Plus history position."""
+
+        metadata = await self.get_history_metadata()
+
+        available_blocks = metadata["num_records"]
+
+        if available_blocks <= 0:
+            raise RuntimeError(
+                "Wave Plus reported no available history."
+            )
+
+        return {
+            "series_id": metadata["series_start"],
+            "latest_index": available_blocks - 1,
+            "available_blocks": available_blocks,
+        }
+
+    def _parse_history_checkpoint(self, block_id):
+        """Parse a Wave Plus block ID: series_start:record_number."""
+
+        try:
+            series_id, record_number = map(int, block_id.split(":"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError(
+                "Wave Plus block ID must be "
+                "'series_start:record_number'"
+            )
+
+        if series_id <= 0 or record_number < 0:
+            raise ValueError("Invalid Wave Plus block ID")
+
+        return series_id, record_number
+
+    async def _collect_history_blocks(
+        self,
+        requested_blocks,
+        timeout=None,
+    ):
+        """
+        Convert a block count into the Wave Plus hours-based request.
+        """
+
+        requested_hours = max(1, requested_blocks - 1)
+
+        return await self.collect_history(
+            hours=requested_hours,
+            timeout=timeout,
+        )
+
+    def format_history_checkpoint(self, block):
+        """Return the stored Plus checkpoint."""
+
+        if block is None:
+            return None
+
+        return block["block_id"]
+
     # History collection
     async def collect_history(
         self,

@@ -7,6 +7,7 @@ are implemented by individual model classes.
 """
 
 import asyncio
+import json
 import math
 from datetime import datetime, timezone
 from pathlib import Path
@@ -471,6 +472,11 @@ class WaveGeneric:
                 if connected_here:
                     await self.disconnect()
 
+    @property
+    def acp_file(self):
+        serial = self.actual_serial or self.SN
+        return self.HISTORY_DIR / f"{self.model_id}_{serial}_acp.json"
+
     def save_history(self, new_blocks, retrieval, storage_dir=None):
         if self.model_id is None:
             raise RuntimeError(
@@ -535,6 +541,152 @@ class WaveGeneric:
             f"Received history block [{received}/{requested}]",
             flush=True,
         )
+
+    
+    # Generic history catch-up interface
+
+    def get_latest_history_block(self):
+        """Return the latest chronologically stored history block."""
+
+        if self.model_id is None:
+            raise RuntimeError(
+                "Device model is unknown. Connect before reading history."
+            )
+
+        serial = self.actual_serial or self.SN
+
+        store = HistoryStore(
+            model_id=self.model_id,
+            serial=serial,
+            storage_dir=self.HISTORY_DIR,
+        )
+
+        if not store.history_file.exists():
+            return None
+
+        existing = json.loads(
+            store.history_file.read_text(encoding="utf-8")
+        )
+
+        blocks = existing.get("blocks", [])
+
+        if not blocks:
+            return None
+
+        return max(
+            blocks,
+            key=lambda block: block["block_timestamp"],
+        )
+
+    async def _get_history_sync_state(self):
+        """
+        Return the device's current history position.
+
+        Expected keys:
+            series_id: identifier for the current history series
+            latest_index: latest available block index
+            available_blocks: number of available blocks
+        """
+        raise NotImplementedError(
+            "Device must implement _get_history_sync_state()."
+        )
+
+    def _parse_history_checkpoint(self, block_id):
+        """Convert a device-specific block ID into (series_id, index)."""
+        raise NotImplementedError(
+            "Device must implement _parse_history_checkpoint()."
+        )
+
+    async def _collect_history_blocks(self, requested_blocks, timeout=None):
+        """Collect and save the requested number of history blocks."""
+        raise NotImplementedError(
+            "Device must implement _collect_history_blocks()."
+        )
+
+    def _count_history_blocks_since(self, checkpoint_index, latest_index):
+        """Calculate the number of blocks to retrieve, including overlap."""
+        return latest_index - checkpoint_index + 1
+
+    async def collect_history_since(
+        self,
+        block_id,
+        timeout=None,
+        max_blocks=80 * 24 - 1,
+    ):
+        """
+        Collect history since a previously stored block.
+
+        Device-specific position handling and collection are delegated
+        to the device implementation.
+        """
+
+        if type(max_blocks) is not int or max_blocks < 2:
+            raise ValueError("max_blocks must be an integer >= 2")
+
+        state = await self._get_history_sync_state()
+
+        series_id = state["series_id"]
+        latest_index = state["latest_index"]
+        available_blocks = state["available_blocks"]
+
+        if available_blocks <= 0:
+            raise RuntimeError("Device reported no available history.")
+
+        if block_id is None:
+            reason = "No checkpoint supplied"
+            wanted_blocks = available_blocks
+
+        else:
+            since_series, since_index = self._parse_history_checkpoint(
+                block_id
+            )
+
+            if since_series != series_id:
+                reason = "Series changed (possible device reset)"
+                wanted_blocks = available_blocks
+
+            else:
+                if since_index > latest_index:
+                    raise RuntimeError(
+                        "Checkpoint is ahead of the device's latest "
+                        "history block."
+                    )
+
+                reason = "Continuing existing series"
+
+                # Include the checkpoint as an overlap.
+                wanted_blocks = self._count_history_blocks_since(
+                    since_index,
+                    latest_index,
+                )
+
+        requested_blocks = min(wanted_blocks, max_blocks)
+
+        print("========== HISTORY CATCH-UP ==========")
+        print(f"Reason: {reason}")
+        print(f"Checkpoint: {block_id}")
+        print(f"Current series: {series_id}")
+        print(f"Latest index: {latest_index}")
+        print(f"Blocks needed: {wanted_blocks}")
+        print(f"Blocks requested: {requested_blocks}")
+
+        result = await self._collect_history_blocks(
+            requested_blocks=requested_blocks,
+            timeout=timeout,
+        )
+
+        result["retrieval"]["catch_up"] = {
+            "since": block_id,
+            "series_id": series_id,
+            "latest_index": latest_index,
+            "wanted_blocks": wanted_blocks,
+            "requested_blocks": requested_blocks,
+            "max_blocks": max_blocks,
+            "reason": reason,
+        }
+
+        return result
+
 
     async def collect_history(self, requested_blocks, timeout=None):
         """
@@ -756,7 +908,6 @@ class WaveGeneric:
         """Preserve raw ACP responses unless a model overrides this."""
         return {}
 
-
     async def collect_acp(self, output_file=None, response_timeout=None):
         """
         Send the ACP command and save raw notification responses.
@@ -772,6 +923,11 @@ class WaveGeneric:
         if response_timeout is None:
             response_timeout = self.ACP_RESPONSE_TIMEOUT
 
+        if output_file is None:
+            output_file = self.acp_file
+
+        output_file = Path(output_file)
+
         connected_here = (
             self.client is None or not self.client.is_connected
         )
@@ -782,10 +938,14 @@ class WaveGeneric:
         responses = []
         response_event = asyncio.Event()
         request_time = self.timestamp()
+        last_response_time = None
 
         def notification_handler(sender, data):
+            nonlocal last_response_time
+
             raw = bytes(data)
             received = self.timestamp()
+            last_response_time = asyncio.get_running_loop().time()
 
             record = {
                 "request_timestamp": request_time,
@@ -826,7 +986,7 @@ class WaveGeneric:
             await asyncio.sleep(1)
 
             print("Sending ACP command:", self.ACP_COMMAND.hex(" "))
-
+            request_start_time = asyncio.get_running_loop().time()
             await client.write_gatt_char(
                 self.ACP_CHARACTERISTIC_UUID,
                 self.ACP_COMMAND,
@@ -839,7 +999,22 @@ class WaveGeneric:
                     timeout=response_timeout,
                 )
 
-                await asyncio.sleep(1)
+                loop = asyncio.get_running_loop()
+
+                while True:
+                    await asyncio.sleep(0.5)
+
+                    if (
+                        loop.time() - last_response_time >= 5
+                    ):
+                        break
+
+                    if (
+                        loop.time() - request_start_time
+                        >= response_timeout
+                    ):
+                        print("WARNING: ACP response timed out.")
+                        break
 
             except asyncio.TimeoutError:
                 print("WARNING: No ACP response received.")
@@ -862,20 +1037,14 @@ class WaveGeneric:
             print("No ACP responses to save.")
             return []
 
-        if self.model_id is None:
-            raise RuntimeError("Device model ID is not available.")
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        store = HistoryStore(
-            model_id=self.model_id,
-            serial=self.actual_serial or self.SN,
-            storage_dir=self.HISTORY_DIR,
-        )
+        with output_file.open("a") as file:
+            for record in responses:
+                file.write(json.dumps(record) + "\n")
 
-        saved_path = store.append_acp_responses(
-            responses,
-            output_file=output_file,
-        )
-
-        print(f"Saved to: {saved_path}")
+        print("========== ACP SUMMARY ==========")
+        print(f"Responses: {len(responses)}")
+        print(f"Saved to: {output_file}")
 
         return responses

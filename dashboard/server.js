@@ -480,12 +480,6 @@ async function get_device_data(device) {
   };
 }
 
-function get_lookback_hours() {
-  return Math.max(
-    1,
-    Math.ceil(Number(config.history_interval_minutes) / 60) + 1
-  );
-}
 
 function build_query_args(job) {
   const args = [QUERY_SCRIPT];
@@ -497,7 +491,7 @@ function build_query_args(job) {
   if (job.full) {
     args.push("--full");
   } else {
-    args.push("--hours", String(job.hours ?? get_lookback_hours()));
+    args.push("--catchup");
   }
 
   return args;
@@ -509,7 +503,6 @@ function enqueue_job(type, options = {}) {
     type,
     serial: options.serial || null,
     full: Boolean(options.full),
-    hours: options.hours ?? get_lookback_hours(),
     status: "queued",
     created_at: new Date().toISOString(),
     started_at: null,
@@ -790,9 +783,6 @@ function get_status() {
     history_interval_minutes:
       config.history_interval_minutes,
 
-    history_lookback_hours:
-      get_lookback_hours(),
-
     last_job: last_job
       ? {
           id: last_job.id,
@@ -1031,10 +1021,7 @@ async function handle_api(req, res, url) {
     return send_json(res, 200, {
       history_interval_minutes:
         config.history_interval_minutes,
-
-      history_lookback_hours:
-        get_lookback_hours(),
-
+        
       device_connect_delay_seconds:
         config.device_connect_delay_seconds,
 
@@ -1094,9 +1081,6 @@ async function handle_api(req, res, url) {
 
       history_interval_minutes:
         config.history_interval_minutes,
-
-      history_lookback_hours:
-        get_lookback_hours(),
 
       device_connect_delay_seconds:
         config.device_connect_delay_seconds

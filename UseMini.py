@@ -30,7 +30,12 @@ async def main():
         print(await mini.get_readings())
 
         # Three history blocks
-        await mini.collect_history(hours=5000)
+        #await mini.collect_history(hours=5000)
+#        await mini.collect_history_since(block_id="1795482424:9")
+        latest_block = mini.get_latest_history_block()
+        since = mini.format_history_checkpoint(latest_block)
+
+        await mini.collect_history_since(block_id=since)
 
         print("Valid packet:", mini.is_valid_history_packet(bytes(205)))
         print("Short packet:", mini.is_valid_history_packet(bytes(100)))
@@ -44,17 +49,17 @@ async def main():
         await mini.collect_acp()
 
         # Configuration
-        print("\nCollecting configuration...")
-        config = await mini.collect_config()
-        print("\nConfiguration object:")
-        print(config)
+       # print("\nCollecting configuration...")
+       # config = await mini.collect_config()
+       # print("\nConfiguration object:")
+       # print(config)
 
 
-        updated = update_config(
-            config,
-            voc_low=200,
-            voc_high=2000
-        )
+        #updated = update_config(
+        #    config,
+       #     voc_low=200,
+       #     voc_high=2000
+       # )
 
    #     verified = await mini.write_config_and_verify(updated)
 

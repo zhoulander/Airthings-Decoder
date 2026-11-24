@@ -399,6 +399,95 @@ class WaveMini(WaveGeneric):
             "records": records,
         }
 
+
+    async def _get_history_sync_state(self):
+        """Get the latest Wave Mini history position from the device."""
+
+        transfer = await super().collect_history(
+            requested_blocks=1,
+        )
+
+        packets = [
+            packet
+            for packet in transfer["packets"]
+            if self.is_valid_history_packet(packet)
+        ]
+
+        if not packets:
+            raise RuntimeError(
+                "Wave Mini did not return a valid history packet "
+                "while checking sync state."
+            )
+
+        latest_packet = max(
+            packets,
+            key=lambda packet: struct.unpack_from("<I", packet, 4)[0],
+        )
+
+        block_id, latest_timestamp = self.get_history_packet_identity(
+            latest_packet
+        )
+
+        return {
+            "series_id": "wave-mini",
+            "latest_index": latest_timestamp,
+            "available_blocks": self.FULL_PACKETS,
+        }
+
+    def _parse_history_checkpoint(self, block_id):
+        """Parse a Wave Mini checkpoint: timestamp:block_id."""
+
+        try:
+            timestamp, packet_id = map(int, block_id.split(":"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError(
+                "Wave Mini block ID must be 'timestamp:block_id'"
+            )
+
+        if timestamp <= 0 or not 0 <= packet_id <= 255:
+            raise ValueError("Invalid Wave Mini block ID")
+
+        return "wave-mini", timestamp
+
+    def _count_history_blocks_since(
+        self,
+        checkpoint_index,
+        latest_index,
+    ):
+        """Estimate elapsed hourly packets, including safety overlap."""
+
+        elapsed_seconds = max(0, latest_index - checkpoint_index)
+
+        elapsed_hours = (
+            elapsed_seconds + 3599
+        ) // 3600
+
+        # One checkpoint overlap plus one extra safety block.
+        return max(2, elapsed_hours + 2)
+
+    async def _collect_history_blocks(
+        self,
+        requested_blocks,
+        timeout=None,
+    ):
+        """Wave Mini requests one packet per hour."""
+
+        return await self.collect_history(
+            hours=requested_blocks,
+            timeout=timeout,
+        )
+
+    def format_history_checkpoint(self, block):
+        """Format a stored Mini block as timestamp:block_id."""
+
+        if block is None:
+            return None
+
+        return (
+            f"{block['block_timestamp']}:"
+            f"{block['block_id']}"
+        )
+
     # History collection
     async def collect_history(self, hours=1, full=False, timeout=None):
         """Collect and store Wave Mini history."""

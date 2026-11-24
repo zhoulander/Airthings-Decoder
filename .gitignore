@@ -16,7 +16,6 @@ devices.json
 # Collected Airthings data
 history/
 dashboard/device_health_*
-dashboard/server_config.json
 
 # Editor settings
 .DS_Store

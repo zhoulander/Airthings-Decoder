@@ -884,7 +884,7 @@ details.outdoor-card[data-weather="storm-night"] {
         <div class="section-head"><div><h2>Compare readings</h2><p>Overlay historical measurements from multiple devices.</p></div></div>
         <div class="toolbar">
           <select id="compare-metric">
-            <option value="temperature_c">Temperature (°C)</option><option value="humidity_pct">Humidity (%)</option><option value="pressure_hpa">Pressure (hPa)</option><option value="co2_ppm">CO₂ (ppm)</option><option value="voc_ppb">VOC (device-native)</option><option value="radon_st">Radon short-term</option><option value="radon_lt">Radon long-term</option>
+            <option value="temperature_c">Temperature (°C)</option><option value="humidity_pct">Humidity (%)</option><option value="pressure_hpa">Pressure (hPa)</option><option value="co2_ppm">CO₂ (ppm)</option><option value="voc_ppb">VOC (ppb)</option><option value="radon_st">Radon short-term</option><option value="radon_lt">Radon long-term</option>
           </select>
           <select id="compare-range"><option value="24">Last 24 hours</option><option value="72">Last 3 days</option><option value="168">Last 7 days</option><option value="720">Last 30 days</option><option value="all">All history</option></select>
         </div>
@@ -937,15 +937,54 @@ details.outdoor-card[data-weather="storm-night"] {
       <div class="grid stats">
         <div class="card"><div class="stat-label">Collector</div><div class="stat-value" id="collector-state">—</div><div class="stat-foot">Current job state</div></div>
         <div class="card"><div class="stat-label">Queued jobs</div><div class="stat-value" id="collector-queued">—</div><div class="stat-foot">Waiting to run</div></div>
-        <div class="card"><div class="stat-label">Polling interval</div><div class="stat-value" id="collector-interval">—</div><div class="stat-foot">Between automatic history polls</div></div>
-        <div class="card"><div class="stat-label">Automatic lookback</div><div class="stat-value" id="collector-lookback">—</div><div class="stat-foot">Calculated as interval + 1 hour</div></div>
+        <div class="card">
+          <div class="stat-label">Polling interval</div>
+          <div class="stat-value" id="collector-interval">—</div>
+          <div class="stat-foot" id="collector-next-poll">Next poll: —</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Last poll</div>
+          <div class="stat-value" id="collector-last-job">—</div>
+          <div class="stat-foot">Most recent completed collection</div>
+        </div>
       </div>
       <div class="grid two-col">
         <div class="card">
-          <div class="section-head"><div><h2>Collection settings</h2><p>Configure how often the collector checks your devices.</p></div></div>
-          <div class="field"><label for="poll-interval">Polling interval</label><select id="poll-interval"><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60">Every hour</option><option value="120">Every 2 hours</option><option value="180">Every 3 hours</option><option value="240">Every 4 hours</option><option value="360">Every 6 hours</option><option value="720">Every 12 hours</option><option value="1440">Every 24 hours</option></select></div>
-          <div class="field"><label>Automatic history lookback (read-only)</label><div class="big-number" id="lookback-preview">4 hours</div><div class="footer-note">The lookback automatically includes one extra hour to avoid missing readings between polls.</div></div>
-          <div class="field"><label for="connect-delay">Delay between device connections (seconds)</label><input id="connect-delay" type="number" min="0" max="120" step="1"></div>
+          <div class="section-head">
+            <div>
+              <h2>Collection settings</h2>
+              <p>Configure how often the collector checks your devices. It will collect history since the last successful collection.</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="poll-interval">Polling interval</label>
+            <select id="poll-interval">
+              <option value="15">Every 15 minutes</option>
+              <option value="30">Every 30 minutes</option>
+              <option value="60">Every hour</option>
+              <option value="120">Every 2 hours</option>
+              <option value="180">Every 3 hours</option>
+              <option value="240">Every 4 hours</option>
+              <option value="360">Every 6 hours</option>
+              <option value="720">Every 12 hours</option>
+              <option value="1440">Every 24 hours</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="connect-delay">
+              Delay between device connections (seconds)
+            </label>
+            <input
+              id="connect-delay"
+              type="number"
+              min="0"
+              max="120"
+              step="1"
+            >
+          </div>
+
           <button class="primary" onclick="save_settings()">Save settings</button>
         </div>
         <div class="card">
@@ -988,7 +1027,7 @@ const DASHBOARD_METRICS = [
   ["temperature_c","Temperature (°C)"],
   ["humidity_pct","Humidity (%)"],
   ["co2_ppm","CO₂ (ppm)"],
-  ["voc_ppb","VOC"],
+  ["voc_ppb","VOC (ppb)"],
   ["pressure_hpa","Pressure (hPa)"],
   ["radon_st","Radon short-term"],
   ["radon_lt","Radon long-term"]
@@ -1008,7 +1047,7 @@ const PAGE_INFO = {
   explore: ["Explore", "Compare measurements and investigate historical trends."],
   collector: ["Collector", "Scheduling, manual collection and process activity."]
 };
-const METRIC_LABELS = {temperature_c:"Temperature (°C)",humidity_pct:"Humidity (%)",pressure_hpa:"Pressure (hPa)",co2_ppm:"CO₂ (ppm)",voc:"VOC",radon_st:"Radon short-term",radon_lt:"Radon long-term"};
+const METRIC_LABELS = {temperature_c:"Temperature (°C)",humidity_pct:"Humidity (%)",pressure_hpa:"Pressure (hPa)",co2_ppm:"CO₂ (ppm)",voc_ppb:"VOC (ppb)",radon_st:"Radon short-term",radon_lt:"Radon long-term"};
 const SERIES_COLORS = ["#69d5c4","#80aaff","#f2bd67","#c49aff","#ff8995","#83d69b","#e5a9d0"];
 const $ = id => document.getElementById(id);
 const fmt = (value, digits = 1) =>
@@ -1352,7 +1391,29 @@ function device_card(device) {
 }
 function escape_html(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
 function set_connection(ok,message){$("header-status").textContent=ok?"● Connected":"● Offline";$("header-status").style.color=ok?"var(--good)":"var(--bad)";$("side-status").textContent=message;$("side-dot").style.background=ok?"var(--good)":"var(--bad)"}
-async function refresh_all(){try{const [data,status]=await Promise.all([api("/api/data"),api("/api/status")]);state.devices=data.devices||[];state.status=status;render_overview();render_device_list();render_compare_checks();populate_query_devices();render_collector_status();set_connection(true,"Server connected")}catch(error){set_connection(false,"Server unavailable");toast(error.message)}}
+async function refresh_all() {
+  try {
+    const [data, status] = await Promise.all([
+      api("/api/data"),
+      api("/api/status")
+    ]);
+
+    state.devices = data.devices || [];
+    state.status = status;
+
+    render_overview();
+    render_device_list();
+    render_compare_checks();
+    populate_query_devices();
+    render_collector_status();
+
+    set_connection(true, "Server connected");
+
+  } catch (error) {
+    set_connection(false, "Server unavailable");
+    toast(error.message);
+  }
+}
 function render_overview_collector() {
   const status = state.status;
 
@@ -2055,8 +2116,7 @@ if (c.outdoor_location) {
   $("outdoor-location-label").textContent =
     c.outdoor_location.name;
 }
-$("poll-interval").value=String(c.history_interval_minutes);$("connect-delay").value=c.device_connect_delay_seconds??5;$("lookback-preview").textContent=`${c.history_lookback_hours} hours`;$("collector-interval").textContent=`${c.history_interval_minutes}m`;$("collector-lookback").textContent=`${c.history_lookback_hours}h`;populate_query_devices()}catch(e){toast(e.message)}}
-$("poll-interval").addEventListener("change",()=>{$("lookback-preview").textContent=`${Math.ceil(Number($("poll-interval").value)/60)+1} hours`});
+$("poll-interval").value=String(c.history_interval_minutes);$("connect-delay").value=c.device_connect_delay_seconds??5;$("collector-interval").textContent=`${c.history_interval_minutes}m`;populate_query_devices()}catch(e){toast(e.message)}}
 $("outdoor-search").addEventListener("keydown", event => {
   if (event.key === "Enter") {
     search_outdoor();
@@ -2087,8 +2147,53 @@ async function load_jobs() {
   }
 }
 function render_jobs(){const jobs=[];if(state.jobs.active)jobs.push(state.jobs.active);jobs.push(...(state.jobs.queued||[]));if(!jobs.length && state.jobs.last)jobs.push(state.jobs.last);$("job-list").innerHTML=jobs.length?jobs.map(j=>`<div class="job"><div class="job-head"><strong>#${j.id} · ${escape_html(j.type)}</strong><span class="pill">${escape_html(j.status)}</span></div><div class="footer-note">${j.serial?`Device ${j.serial} · `:""}${display_time(j.started_at||j.created_at)}</div></div>`).join(""):'<div class="muted">No jobs recorded.</div>';const output=state.jobs.active?.output||state.jobs.last?.output||"";$("latest-output").innerHTML=output?`<pre>${escape_html(output.slice(-12000))}</pre>`:'<div class="muted">No collector output yet.</div>'}
-function render_collector_status(){const s=state.status;$("collector-state").textContent=s.running?"Running":"Idle";$("collector-queued").textContent=s.queued_jobs??0;$("collector-interval").textContent=`${s.history_interval_minutes??"—"}m`;$("collector-lookback").textContent=`${s.history_lookback_hours??"—"}h`}
+function render_collector_status() {
+  const s = state.status;
 
+  $("collector-state").textContent = s.running ? "Running" : "Idle";
+  $("collector-queued").textContent = s.queued_jobs ?? 0;
+  $("collector-interval").textContent =
+    `${s.history_interval_minutes ?? "—"}m`;
+
+  const nextPoll = s.next_history_run
+    ? new Date(s.next_history_run)
+    : null;
+
+  if (!nextPoll || isNaN(nextPoll.getTime())) {
+    $("collector-next-poll").textContent = "Next poll: Not scheduled";
+    return;
+  }
+
+  const remainingMinutes = Math.max(
+    0,
+    Math.ceil((nextPoll.getTime() - Date.now()) / 60000)
+  );
+
+  const hours = Math.floor(remainingMinutes / 60);
+  const minutes = remainingMinutes % 60;
+
+  const countdown =
+    `${String(hours).padStart(0, "0")}h${String(minutes).padStart(0, "0")}m`;
+
+  const scheduledTime = nextPoll.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+
+  $("collector-next-poll").textContent =
+    `Next poll: ${scheduledTime} · ${countdown} remaining`;
+
+  $("collector-last-job").textContent =
+  s.last_job?.finished_at
+    ? new Date(s.last_job.finished_at).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      })
+    : "Never";
+}
+setInterval(render_collector_status, 1000);
 
 function init_sidebar() {
   const app = document.querySelector(".app");

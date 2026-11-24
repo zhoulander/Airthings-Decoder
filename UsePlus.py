@@ -27,30 +27,34 @@ async def main():
         print()
 
         # Live sensors
-        print(await plus.get_readings())
+   #     print(await plus.get_readings())
 
         # Retrieve three hours of history
-        await plus.collect_history(hours=3)
+        #await plus.collect_history(hours=3)
+#        await plus.collect_history_since("1787523849:2208")
 #        await plus.collect_history(full=True)
+        latest_block = plus.get_latest_history_block()
+        since = plus.format_history_checkpoint(latest_block)
 
+        await plus.collect_history_since(block_id=since)
 
 
         # Configuration
-        config = await plus.collect_config()
-        print("\nConfiguration object:")
-        print(config)
+      #  config = await plus.collect_config()
+      #  print("\nConfiguration object:")
+      #  print(config)
 
 
-        updated = update_config(
-            config,
-            radon_low=105,
-            radon_high=205
-        )
+     #   updated = update_config(
+     #       config,
+     #       radon_low=105,
+     #       radon_high=205
+     #   )
 
-        verified = await plus.write_config_and_verify(updated)
+     #   verified = await plus.write_config_and_verify(updated)
 
-        print("\nVerified configuration:")
-        print(verified)
+    #    print("\nVerified configuration:")
+    #    print(verified)
 
         # Write and read back to verify
 #        verified = await plus.write_config(updated)

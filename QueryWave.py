@@ -176,9 +176,24 @@ async def query_device(device_info, args):
             print("\nSkipping device configuration.")
 
         print("\n========== HISTORY ==========")
-        if args.full:
+
+        if args.catchup:
+            latest_block = sensor.get_latest_history_block()
+            checkpoint = sensor.format_history_checkpoint(latest_block)
+
+            if checkpoint is None:
+                print("No existing history checkpoint. Starting initial catch-up...")
+            else:
+                print(f"Starting catch-up from checkpoint: {checkpoint}")
+
+            await sensor.collect_history_since(
+                block_id=checkpoint,
+            )
+
+        elif args.full:
             print("Collecting full history...")
             await sensor.collect_history(full=True)
+
         else:
             print(f"Collecting last {args.hours} hours...")
             await sensor.collect_history(hours=args.hours)
@@ -222,6 +237,11 @@ async def main():
         action="store_true",
         help="Collect all available history.",
     )
+    history.add_argument(
+        "--catchup",
+        action="store_true",
+        help="Retrieve history since the latest locally stored block.",
+    )
 
     parser.add_argument(
         "--include-config",
@@ -252,7 +272,7 @@ async def main():
     RSSI_SCAN_TIMEOUT = config["rssi_scan_timeout_seconds"]
     DEVICE_CONNECT_DELAY = config["device_connect_delay_seconds"]
 
-    if not args.full:
+    if not args.full and not args.catchup:
         args.hours = (
             args.hours
             if args.hours is not None
@@ -265,7 +285,14 @@ async def main():
     print(f"\n{'=' * 55}")
     print("AIRTHINGS QUERY")
     print(f"{'=' * 55}")
-    print(f"History hours:        {'Full' if args.full else args.hours}")
+
+    history_mode = (
+        "Catch-up" if args.catchup
+        else "Full" if args.full
+        else f"{args.hours} hours"
+    )
+    print(f"History mode:         {history_mode}")
+
     print(f"Device connect delay: {DEVICE_CONNECT_DELAY}s")
     print(f"RSSI scan timeout:    {RSSI_SCAN_TIMEOUT}s")
 
@@ -297,7 +324,7 @@ async def main():
 
         device_name = device_info.get("name", device_info.get("serial"))
         last_error = None
-        timeout_seconds = 300 if args.full else 120
+        timeout_seconds = 300 if (args.full or args.catchup) else 120
         print(f"Query timeout: {timeout_seconds}s")
 
         for attempt in range(1, MAX_DEVICE_ATTEMPTS + 1):
